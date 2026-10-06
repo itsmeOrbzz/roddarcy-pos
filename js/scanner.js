@@ -1,114 +1,154 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const pairingView = document.getElementById('pairing-view');
-    const scannerView = document.getElementById('scanner-view');
-    const manualPeerIdInput = document.getElementById('manual-peer-id');
-    const btnConnectManual = document.getElementById('btn-connect-manual');
+    // DOM elements
+    const pairingPhase = document.getElementById('pairing-phase');
+    const scanningPhase = document.getElementById('scanning-phase');
+    const manualCodeInput = document.getElementById('manual-code-input');
+    const btnManualConnect = document.getElementById('btn-manual-connect');
     const btnDisconnect = document.getElementById('btn-disconnect');
-    const manualBarcodeInput = document.getElementById('manual-barcode');
-    const btnSubmitBarcode = document.getElementById('btn-submit-barcode');
-    const scanStatus = document.getElementById('scan-status');
+    const connectionStatus = document.getElementById('connection-status');
+    const lastScannedStatus = document.getElementById('last-scanned-status');
     const scanFlash = document.getElementById('scan-flash');
-    const reticle = document.getElementById('reticle');
+    
+    // Manual Barcode Modal elements
+    const btnToggleManual = document.getElementById('btn-toggle-manual');
+    const manualBarcodeModal = document.getElementById('manual-barcode-modal');
+    const manualBarcodeInput = document.getElementById('manual-barcode-input');
+    const btnCloseManualModal = document.getElementById('btn-close-manual-modal');
+    const btnSendManualBarcode = document.getElementById('btn-send-manual-barcode');
 
     let pm = null;
     let html5QrcodeScanner = null;
     let lastScanTime = 0;
     const SCAN_COOLDOWN = 1500;
 
-    // Initialize Phase 1 (QR Scanner)
-    async function initQRScanner() {
-        if (html5QrcodeScanner) {
-            await stopScanner();
-        }
+    // Update Header Status Indicator
+    function updateStatusUI(status, message) {
+        if (!connectionStatus) return;
+        connectionStatus.className = 'connection-status ' + status;
+        connectionStatus.textContent = message || (status === 'connected' ? 'Connected' : 'Disconnected');
         
-        pairingView.classList.add('active-view');
-        scannerView.classList.remove('active-view');
-        reticle.style.display = 'none';
+        if (status === 'connected') {
+            if (btnDisconnect) btnDisconnect.classList.remove('hidden');
+        } else {
+            if (btnDisconnect) btnDisconnect.classList.add('hidden');
+        }
+    }
+
+    // Phase 1: Initialize QR Code Scanner
+    async function initQRScanner() {
+        await stopScanner();
+        
+        if (pairingPhase) pairingPhase.classList.remove('hidden');
+        if (scanningPhase) scanningPhase.classList.add('hidden');
+        updateStatusUI('disconnected', 'Disconnected');
 
         try {
             html5QrcodeScanner = new Html5Qrcode("qr-reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            const config = { fps: 10, qrbox: { width: 220, height: 220 } };
             
             await html5QrcodeScanner.start(
                 { facingMode: "environment" },
                 config,
                 onQRScanned,
-                (errorMessage) => { /* Ignore noisy frame errors */ }
+                (errorMessage) => { /* Silent frame errors */ }
             );
         } catch (err) {
-            console.error("QR Scanner Init Error:", err);
-            showToast("Camera access denied or unavailable. Please use manual entry.", "error");
+            console.warn("QR Scanner Init Note:", err);
+            // Camera permission denied or not available; user can type pairing code manually
         }
     }
 
     async function stopScanner() {
-        if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
-            await html5QrcodeScanner.stop();
-            html5QrcodeScanner.clear();
+        if (html5QrcodeScanner) {
+            try {
+                await html5QrcodeScanner.stop();
+                html5QrcodeScanner.clear();
+            } catch (e) {
+                // Ignore stop errors if already stopped
+            }
+            html5QrcodeScanner = null;
         }
-        html5QrcodeScanner = null;
     }
 
-    async function onQRScanned(decodedText, decodedResult) {
+    async function onQRScanned(decodedText) {
         if (pm && pm.isConnected) return;
-        
         showToast("QR Scanned! Connecting...", "success");
         await connectToRegister(decodedText);
     }
 
+    // Connect to iPad Register
     async function connectToRegister(peerId) {
+        if (!peerId) {
+            showToast("Please enter a valid pairing code", "error");
+            return;
+        }
+
+        const formattedId = peerId.trim();
+        updateStatusUI('connecting', 'Connecting...');
+        showToast("Connecting to register...", "info", 3000);
+        
         await stopScanner();
-        
+
+        // Create PeerManager for scanner
         pm = new PeerManager('scanner');
-        
-        pm.onConnect(() => {
-            showToast("Connected to register!", "success");
-            startBarcodeScanner();
+
+        pm.onStatusChange((status) => {
+            if (status === 'connected') {
+                updateStatusUI('connected', 'Connected to Register');
+                showToast("Connected to register!", "success");
+                switchToScanningPhase();
+            } else if (status === 'disconnected' || status === 'error') {
+                updateStatusUI('disconnected', 'Disconnected');
+            }
         });
-        
-        pm.onDisconnect(() => {
-            showToast("Disconnected from register", "warning");
-            if (pm) pm.destroy();
-            pm = null;
-            initQRScanner();
-        });
-        
+
         pm.onData((data) => {
             if (data.type === 'ACK') {
-                scanStatus.textContent = `✅ ${data.name || data.barcode}`;
-                scanStatus.style.color = '#10b981';
+                if (lastScannedStatus) {
+                    lastScannedStatus.textContent = `✅ ${data.name || data.barcode}`;
+                    lastScannedStatus.style.color = '#10b981';
+                }
+                showToast(`Added: ${data.name || data.barcode}`, "success");
             } else if (data.type === 'NOT_FOUND') {
-                showToast("Product not found", "error");
-                scanStatus.textContent = `❌ Unknown: ${data.barcode}`;
-                scanStatus.style.color = '#ef4444';
+                if (lastScannedStatus) {
+                    lastScannedStatus.textContent = `❌ Product not found: ${data.barcode}`;
+                    lastScannedStatus.style.color = '#ef4444';
+                }
+                showToast(`Product not found (${data.barcode})`, "error");
                 triggerFlash(true);
                 playErrorBeep();
             }
         });
 
-        await pm.init();
-        const success = await pm.connectToPeer(peerId);
-        if (!success) {
-            showToast("Failed to connect. Make sure register is open.", "error");
-            if (pm) pm.destroy();
-            pm = null;
-            initQRScanner();
+        pm.onError((errMsg) => {
+            showToast(errMsg || "Connection error", "error");
+            updateStatusUI('disconnected', 'Connection Failed');
+        });
+
+        try {
+            await pm.init();
+            pm.connectToPeer(formattedId);
+        } catch (err) {
+            console.error("Peer connect error:", err);
+            showToast("Failed to initialize scanner connection", "error");
+            updateStatusUI('disconnected', 'Failed');
         }
     }
 
-    // Phase 2: Barcode Scanner
-    async function startBarcodeScanner() {
-        pairingView.classList.remove('active-view');
-        scannerView.classList.add('active-view');
-        reticle.style.display = 'block';
-        scanStatus.textContent = "Ready to scan...";
-        scanStatus.style.color = '#f8fafc';
+    // Phase 2: Barcode Scanning View
+    async function switchToScanningPhase() {
+        if (pairingPhase) pairingPhase.classList.add('hidden');
+        if (scanningPhase) scanningPhase.classList.remove('hidden');
+        if (lastScannedStatus) {
+            lastScannedStatus.textContent = "Ready to scan product barcodes...";
+            lastScannedStatus.style.color = '#f8fafc';
+        }
 
         try {
             html5QrcodeScanner = new Html5Qrcode("barcode-reader");
             const config = { 
                 fps: 10, 
-                qrbox: { width: 300, height: 150 },
+                qrbox: { width: 280, height: 140 },
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.EAN_13,
                     Html5QrcodeSupportedFormats.EAN_8,
@@ -123,23 +163,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { facingMode: "environment" },
                 config,
                 onBarcodeScanned,
-                (errorMessage) => { /* Ignore */ }
+                (errorMessage) => { /* Frame decode failure - normal */ }
             );
         } catch (err) {
-            console.error("Barcode Scanner Init Error:", err);
-            showToast("Failed to start barcode scanner", "error");
+            console.warn("Barcode camera reader notice:", err);
         }
     }
 
-    function onBarcodeScanned(decodedText, decodedResult) {
+    function onBarcodeScanned(decodedText) {
         const now = Date.now();
         if (now - lastScanTime < SCAN_COOLDOWN) return;
-        
         lastScanTime = now;
-        processBarcode(decodedText);
+        sendBarcodeToRegister(decodedText);
     }
     
-    function processBarcode(barcode) {
+    function sendBarcodeToRegister(barcode) {
         if (!pm || !pm.isConnected) {
             showToast("Not connected to register", "error");
             return;
@@ -149,13 +187,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof vibrate === 'function') vibrate([100]);
         if (typeof playScanBeep === 'function') playScanBeep();
         
-        scanStatus.textContent = `Scanning ${barcode}...`;
-        scanStatus.style.color = '#f8fafc';
+        if (lastScannedStatus) {
+            lastScannedStatus.textContent = `Sending barcode ${barcode}...`;
+            lastScannedStatus.style.color = '#f8fafc';
+        }
         
         pm.sendBarcode(barcode);
     }
 
     function triggerFlash(isError = false) {
+        if (!scanFlash) return;
         if (isError) scanFlash.classList.add('flash-red');
         else scanFlash.classList.remove('flash-red');
         
@@ -165,28 +206,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 200);
     }
 
-    btnConnectManual.addEventListener('click', () => {
-        const id = manualPeerIdInput.value.trim();
-        if (id) connectToRegister(id);
-    });
+    // Manual Connection Listeners
+    if (btnManualConnect && manualCodeInput) {
+        btnManualConnect.addEventListener('click', () => {
+            const code = manualCodeInput.value.trim();
+            if (code) connectToRegister(code);
+        });
 
-    btnDisconnect.addEventListener('click', () => {
-        if (pm) pm.disconnect();
-    });
+        manualCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const code = manualCodeInput.value.trim();
+                if (code) connectToRegister(code);
+            }
+        });
+    }
 
-    btnSubmitBarcode.addEventListener('click', () => {
-        const barcode = manualBarcodeInput.value.trim();
-        if (barcode) {
-            processBarcode(barcode);
-            manualBarcodeInput.value = '';
-        }
-    });
+    if (btnDisconnect) {
+        btnDisconnect.addEventListener('click', () => {
+            if (pm) {
+                pm.disconnect();
+                pm = null;
+            }
+            initQRScanner();
+        });
+    }
 
-    manualBarcodeInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            btnSubmitBarcode.click();
-        }
-    });
+    // Manual Barcode Modal Handlers
+    if (btnToggleManual) {
+        btnToggleManual.addEventListener('click', () => {
+            if (manualBarcodeModal) manualBarcodeModal.classList.remove('hidden');
+            if (manualBarcodeInput) manualBarcodeInput.focus();
+        });
+    }
+
+    if (btnCloseManualModal) {
+        btnCloseManualModal.addEventListener('click', () => {
+            if (manualBarcodeModal) manualBarcodeModal.classList.add('hidden');
+        });
+    }
+
+    if (btnSendManualBarcode && manualBarcodeInput) {
+        const sendManual = () => {
+            const barcode = manualBarcodeInput.value.trim();
+            if (barcode) {
+                sendBarcodeToRegister(barcode);
+                manualBarcodeInput.value = '';
+                if (manualBarcodeModal) manualBarcodeModal.classList.add('hidden');
+            }
+        };
+
+        btnSendManualBarcode.addEventListener('click', sendManual);
+        manualBarcodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendManual();
+        });
+    }
 
     // Start Phase 1
     initQRScanner();
