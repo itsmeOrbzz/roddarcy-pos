@@ -30,6 +30,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     let products = [];
     let isEditing = false;
     let originalBarcode = '';
+
+    // Modal Helpers
+    function openModal(el) {
+        if (!el) return;
+        el.classList.remove('hidden');
+        el.classList.add('active');
+        el.style.display = 'flex';
+    }
+
+    function closeModal(el) {
+        if (!el) return;
+        el.classList.add('hidden');
+        el.classList.remove('active');
+        el.style.display = 'none';
+    }
     
     // Populate categories
     if (window.CATEGORIES) {
@@ -119,8 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 productNameInp.value = product.name;
                 productPriceInp.value = product.price;
                 productCategoryInp.value = product.category;
-                productModal.classList.remove('hidden');
-                productModal.style.display = 'flex';
+                openModal(productModal);
             }
         } else if (deleteBtn) {
             const barcode = deleteBtn.dataset.barcode;
@@ -140,14 +154,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         originalBarcode = '';
         modalTitle.textContent = 'Add Product';
         productForm.reset();
-        productModal.classList.remove('hidden');
-        productModal.style.display = 'flex';
+        openModal(productModal);
     });
 
     // Cancel Product Modal
     document.getElementById('btnCancelProduct').addEventListener('click', () => {
-        productModal.classList.add('hidden');
-        productModal.style.display = 'none';
+        closeModal(productModal);
         stopScanner();
     });
 
@@ -173,12 +185,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             await db.addProduct(product);
             showToast(isEditing ? `Updated "${name}"` : `Added "${name}" to inventory`, 'success');
-            productModal.classList.add('hidden');
-            productModal.style.display = 'none';
+            closeModal(productModal);
             await loadProducts();
         } catch (err) {
             console.error('Error saving product:', err);
             showToast('Failed to save product: ' + err.message, 'error');
+        }
+    });
+
+    // Backdrop click close
+    productModal.addEventListener('click', (e) => {
+        if (e.target === productModal) {
+            closeModal(productModal);
+            stopScanner();
+        }
+    });
+
+    scannerModal.addEventListener('click', (e) => {
+        if (e.target === scannerModal) {
+            stopScanner();
         }
     });
 
@@ -199,8 +224,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        scannerModal.classList.remove('hidden');
-        scannerModal.style.display = 'flex';
+        openModal(scannerModal);
 
         if (!html5QrcodeScanner) {
             html5QrcodeScanner = new Html5Qrcode('modalReader');
@@ -224,15 +248,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             config,
             (decodedText) => {
                 // Successfully scanned barcode
-                playScanBeep();
+                if (typeof playScanBeep === 'function') playScanBeep();
                 productBarcodeInp.value = decodedText;
                 showToast(`Scanned barcode: ${decodedText}`, 'success');
                 stopScanner();
-                // Focus product name for easy entry
                 setTimeout(() => productNameInp.focus(), 300);
             },
             (errorMessage) => {
-                // Ignore silent frame-by-frame errors
+                // Ignore silent frame errors
             }
         ).catch(err => {
             console.error('Camera access error:', err);
@@ -248,9 +271,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).catch(err => {
                 console.warn('Scanner stop warning:', err);
             });
+            html5QrcodeScanner = null;
         }
-        scannerModal.classList.add('hidden');
-        scannerModal.style.display = 'none';
+        closeModal(scannerModal);
     }
 
     // Initial load
