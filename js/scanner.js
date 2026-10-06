@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let pm = null;
     let html5QrcodeScanner = null;
+    let isScanningPhaseActive = false;
     let lastScanTime = 0;
     const SCAN_COOLDOWN = 1500;
     let currentScannedBarcode = '';
@@ -69,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Phase 1: Initialize QR Code Scanner
     async function initQRScanner() {
+        isScanningPhaseActive = false;
         await stopScanner();
         
         if (pairingPhase) {
@@ -99,7 +101,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function stopScanner() {
         if (html5QrcodeScanner) {
             try {
-                await html5QrcodeScanner.stop();
+                if (html5QrcodeScanner.isScanning) {
+                    await html5QrcodeScanner.stop();
+                }
                 html5QrcodeScanner.clear();
             } catch (e) {
                 // Ignore stop errors
@@ -132,9 +136,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         pm.onStatusChange((status) => {
             if (status === 'connected') {
                 updateStatusUI('connected', 'Connected to Register');
-                showToast("Connected to register!", "success");
-                switchToScanningPhase();
+                if (!isScanningPhaseActive) {
+                    isScanningPhaseActive = true;
+                    showToast("Connected to register!", "success");
+                    switchToScanningPhase();
+                }
             } else if (status === 'disconnected' || status === 'error') {
+                isScanningPhaseActive = false;
                 updateStatusUI('disconnected', 'Disconnected');
             }
         });
@@ -200,10 +208,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Wait brief delay to allow previous QR camera stream to release completely
-        await new Promise(resolve => setTimeout(resolve, 400));
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         try {
-            html5QrcodeScanner = new Html5Qrcode("barcode-reader");
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5Qrcode("barcode-reader");
+            }
+
+            if (html5QrcodeScanner.isScanning) return;
+
             const config = { 
                 fps: 10, 
                 qrbox: { width: 280, height: 140 }
