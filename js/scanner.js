@@ -221,15 +221,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         await new Promise(resolve => setTimeout(resolve, 300));
 
         try {
-            if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5Qrcode("barcode-reader");
+            if (html5QrcodeScanner) {
+                await stopScanner();
             }
 
-            if (html5QrcodeScanner.isScanning) return;
+            const formats = window.Html5QrcodeSupportedFormats ? [
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.CODE_93,
+                Html5QrcodeSupportedFormats.ITF,
+                Html5QrcodeSupportedFormats.QR_CODE
+            ] : undefined;
+
+            html5QrcodeScanner = new Html5Qrcode("barcode-reader", formats ? { formatsToSupport: formats, verbose: false } : false);
 
             const config = { 
-                fps: 10, 
-                qrbox: { width: 280, height: 140 }
+                fps: 15, 
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    return {
+                        width: Math.min(320, Math.floor(viewfinderWidth * 0.85)),
+                        height: Math.min(180, Math.floor(viewfinderHeight * 0.45))
+                    };
+                },
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                }
             };
             
             await html5QrcodeScanner.start(

@@ -1161,11 +1161,18 @@ h6 { font-size: var(--font-size-base); }
   inset: 0 !important;
 }
 
+#barcode-reader__scan_region,
+#qr-reader__scan_region {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+}
+
 /* Hide html5-qrcode's built-in SVG overlay and dashboard to fix camera guide box flickering */
 #barcode-reader #qr-shaded-region,
 #qr-reader #qr-shaded-region,
-#barcode-reader__scan_region,
-#qr-reader__scan_region,
 #barcode-reader__dashboard,
 #qr-reader__dashboard,
 #barcode-reader img[alt="Info icon"],
