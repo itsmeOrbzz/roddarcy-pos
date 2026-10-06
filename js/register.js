@@ -24,12 +24,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    pm.onConnect(async () => {
+        // Auto-sync master inventory to newly paired phone scanner
+        try {
+            const allProducts = await db.getAllProducts();
+            pm.send({
+                type: 'sync_products',
+                products: allProducts
+            });
+        } catch (e) {
+            console.error('Error syncing products on connect:', e);
+        }
+    });
+
     pm.onData(async (data) => {
         if (data.type === 'scan' || data.type === 'barcode') {
             await handleScan(data.barcode);
+        } else if (data.type === 'query_product' && data.barcode) {
+            const product = await db.getProduct(data.barcode);
+            if (product) {
+                pm.send({ type: 'product_found', product });
+            } else {
+                pm.sendNotFound(data.barcode);
+            }
         } else if (data.type === 'product_added' && data.product) {
             await db.addProduct(data.product);
-            showToast(`New wholesale product added: ${data.product.name}`, 'success');
+            showToast(`Master Inventory Updated: ${data.product.name}`, 'success');
+            // Sync updated catalog back to connected phone scanner
+            const allProducts = await db.getAllProducts();
+            pm.send({ type: 'sync_products', products: allProducts });
         }
     });
 

@@ -134,7 +134,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         pm.onData(async (data) => {
-            if (data.type === 'ACK') {
+            if (data.type === 'sync_products' && Array.isArray(data.products)) {
+                // Receive full master inventory from iPad register!
+                if (window.db) {
+                    await db.importProducts(data.products);
+                    showToast(`Synced ${data.products.length} master products from register`, "info", 2000);
+                }
+            } else if (data.type === 'product_found' && data.product) {
+                if (window.db) {
+                    await db.addProduct(data.product);
+                }
+                pm.sendBarcode(data.product.barcode);
+            } else if (data.type === 'ACK') {
                 if (lastScannedStatus) {
                     lastScannedStatus.textContent = `✅ ${data.name || data.barcode}`;
                     lastScannedStatus.style.color = '#10b981';
@@ -144,7 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Check if phone already has product in local DB before prompting!
                 const existing = window.db ? await db.getProduct(data.barcode) : null;
                 if (existing) {
-                    // Item exists locally; resync to register
                     if (pm && pm.isConnected) {
                         pm.send({ type: 'product_added', product: existing });
                         setTimeout(() => pm.sendBarcode(data.barcode), 250);
@@ -217,14 +227,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (typeof vibrate === 'function') vibrate([100]);
         if (typeof playScanBeep === 'function') playScanBeep();
 
-        // Check local database first
+        // 1. Check local phone database first
         let product = null;
         if (window.db) {
             product = await db.getProduct(barcode);
         }
 
         if (product) {
-            // Product exists in database! Send to register cart as usual
+            // Product exists locally! Send to register cart as usual
             if (lastScannedStatus) {
                 lastScannedStatus.textContent = `Scanned ${product.name} (${formatCurrency(product.price)})`;
                 lastScannedStatus.style.color = '#10b981';
@@ -234,8 +244,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 showToast(`Scanned: ${product.name} - ${formatCurrency(product.price)}`, "success");
             }
+        } else if (pm && pm.isConnected) {
+            // 2. Not found in phone's local cache -> query iPad register master DB!
+            pm.send({ type: 'query_product', barcode: barcode });
         } else {
-            // Product NOT in database -> open Add New Product modal on phone!
+            // 3. Not found & not connected -> prompt to add new product
             promptAddNewProduct(barcode);
         }
     }
