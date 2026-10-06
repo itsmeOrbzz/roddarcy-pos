@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RodDarcy POS</title>
+    <meta name="description" content="Free Point of Sale for your Sari-Sari Store">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .hidden { display: none !important; }
+        .flex { display: flex !important; }
+    </style>
+</head>
+<body class="landing-page dark-theme">
+    <div class="landing-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <main class="landing-container" style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem;">
+        <header class="landing-hero" style="text-align: center; margin-bottom: 3rem;">
+            <div class="logo-icon" style="font-size: 3rem; font-weight: 800; background: var(--gradient-accent, linear-gradient(135deg, #0d9488, #0f766e)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; display: inline-block;">
+                <span>₱</span>
+            </div>
+            <h1 class="landing-title" style="font-size: 3.5rem; margin-bottom: 0.5rem; font-weight: 800; letter-spacing: -0.05em;">RodDarcy <span class="highlight" style="background: var(--gradient-accent, linear-gradient(135deg, #2dd4bf, #0d9488)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">POS</span></h1>
+            <p class="landing-subtitle" style="font-size: 1.25rem; color: var(--text-secondary, #9ca3af);">Free Point of Sale for your Sari-Sari Store</p>
+        </header>
+
+        <section class="landing-actions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; width: 100%; max-width: 800px; margin-bottom: 3rem;">
+            <a href="register.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📋</div>
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Open Register</h2>
+                <p style="color: var(--text-secondary, #9ca3af);">iPad display & checkout</p>
+            </a>
+            <a href="scanner.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📱</div>
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Open Scanner</h2>
+                <p style="color: var(--text-secondary, #9ca3af);">Scan barcodes to register</p>
+            </a>
+            <a href="products.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📦</div>
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Manage Products</h2>
+                <p style="color: var(--text-secondary, #9ca3af);">Add & edit your inventory</p>
+            </a>
+            <a href="history.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Sales History</h2>
+                <p style="color: var(--text-secondary, #9ca3af);">View daily & weekly reports</p>
+            </a>
+        </section>
+
+        <footer class="landing-footer">
+            <button id="openSettingsBtn" class="btn btn-icon btn-ghost" title="Settings" style="border-radius: 50%; padding: 0.75rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+        </footer>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 50; align-items: center; justify-content: center;">
+        <div class="modal card" style="width: 100%; max-width: 500px; padding: 2rem;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 600;">Store Settings</h2>
+                <button id="closeSettingsBtn" class="btn btn-icon btn-ghost">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="modal-body" style="margin-bottom: 1.5rem;">
+                <form id="settingsForm">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="storeName" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Store Name</label>
+                        <input type="text" id="storeName" class="form-input" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: var(--bg-darker, #111827); border: 1px solid var(--border-color, #374151); color: white;" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="storeAddress" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Store Address</label>
+                        <input type="text" id="storeAddress" class="form-input" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: var(--bg-darker, #111827); border: 1px solid var(--border-color, #374151); color: white;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="storePhone" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Store Phone</label>
+                        <input type="tel" id="storePhone" class="form-input" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: var(--bg-darker, #111827); border: 1px solid var(--border-color, #374151); color: white;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="storeTagline" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Store Tagline</label>
+                        <input type="text" id="storeTagline" class="form-input" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: var(--bg-darker, #111827); border: 1px solid var(--border-color, #374151); color: white;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label" for="receiptFooter" style="display: block; margin-bottom: 0.5rem; font-size: 0.875rem;">Receipt Footer Message</label>
+                        <input type="text" id="receiptFooter" class="form-input" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: var(--bg-darker, #111827); border: 1px solid var(--border-color, #374151); color: white;">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" id="cancelSettingsBtn" class="btn btn-secondary" style="padding: 0.5rem 1rem; border-radius: 0.5rem; background: transparent; border: 1px solid var(--border-color, #374151); color: white;">Cancel</button>
+                <button type="button" id="saveSettingsBtn" class="btn btn-primary" style="padding: 0.5rem 1rem; border-radius: 0.5rem; background: var(--primary-color, #0d9488); border: none; color: white; font-weight: 500;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const settingsModal = document.getElementById('settingsModal');
+            const openSettingsBtn = document.getElementById('openSettingsBtn');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+            const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            const settingsForm = document.getElementById('settingsForm');
+
+            // Form inputs
+            const inputName = document.getElementById('storeName');
+            const inputAddress = document.getElementById('storeAddress');
+            const inputPhone = document.getElementById('storePhone');
+            const inputTagline = document.getElementById('storeTagline');
+            const inputFooter = document.getElementById('receiptFooter');
+
+            function loadSettings() {
+                if (typeof getStoreSettings === 'function') {
+                    const settings = getStoreSettings();
+                    inputName.value = settings.storeName || '';
+                    inputAddress.value = settings.storeAddress || '';
+                    inputPhone.value = settings.storePhone || '';
+                    inputTagline.value = settings.storeTagline || '';
+                    inputFooter.value = settings.receiptFooter || '';
+                }
+            }
+
+            function showModal() {
+                loadSettings();
+                settingsModal.classList.remove('hidden');
+                settingsModal.classList.add('flex'); // Add flex to make it visible
+            }
+
+            function hideModal() {
+                settingsModal.classList.add('hidden');
+                settingsModal.classList.remove('flex');
+            }
+
+            openSettingsBtn.addEventListener('click', showModal);
+            closeSettingsBtn.addEventListener('click', hideModal);
+            cancelSettingsBtn.addEventListener('click', hideModal);
+
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    hideModal();
+                }
+            });
+
+            saveSettingsBtn.addEventListener('click', () => {
+                if (settingsForm.checkValidity()) {
+                    if (typeof saveStoreSettings === 'function') {
+                        saveStoreSettings({
+                            storeName: inputName.value,
+                            storeAddress: inputAddress.value,
+                            storePhone: inputPhone.value,
+                            storeTagline: inputTagline.value,
+                            receiptFooter: inputFooter.value
+                        });
+                        
+                        if (typeof showToast === 'function') {
+                            showToast('Settings saved successfully', 'success');
+                        }
+                    }
+                    hideModal();
+                } else {
+                    settingsForm.reportValidity();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

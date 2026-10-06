@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales History - RodDarcy POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        .chart-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 200px;
+            padding-top: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            flex: 1;
+            height: 100%;
+        }
+        .bar {
+            width: 40px;
+            background-color: var(--primary);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s;
+            min-height: 2px;
+        }
+        .bar-label {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .bar-value {
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        .transaction-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .transaction-header {
+            padding: 1rem;
+            background: var(--surface-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .transaction-details {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            display: none;
+        }
+        .transaction-details.expanded {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-body text-text">
+    <header class="app-header">
+        <div class="logo">RodDarcy POS</div>
+        <nav class="nav-links">
+            <a href="index.html" class="nav-link">Register</a>
+            <a href="scanner.html" class="nav-link">Scanner</a>
+            <a href="products.html" class="nav-link">Products</a>
+            <a href="history.html" class="nav-link active">History</a>
+        </nav>
+        <div class="header-actions">
+            <button id="btnExportTransactions" class="btn btn-outline btn-sm">Export Data</button>
+            <button id="btnClearHistory" class="btn btn-danger btn-sm">Clear History</button>
+        </div>
+    </header>
+
+    <main class="container py-4">
+        <div class="flex justify-between items-center mb-4 card p-3 flex-wrap gap-4">
+            <div class="flex items-center gap-2">
+                <input type="date" id="dateSelector" class="form-input">
+            </div>
+            <div class="flex gap-2">
+                <button id="btnToday" class="btn btn-primary">Today</button>
+                <button id="btnThisWeek" class="btn btn-secondary">This Week</button>
+            </div>
+        </div>
+
+        <h2 id="reportTitle" class="text-xl font-bold mb-4">Today's Summary</h2>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat-card card">
+                <div class="stat-label">Total Sales</div>
+                <div class="stat-value text-primary" id="statSales">₱0.00</div>
+            </div>
+            <div class="stat-card card">
+                <div class="stat-label">Transactions</div>
+                <div class="stat-value" id="statTxCount">0</div>
+            </div>
+            <div class="stat-card card">
+                <div class="stat-label">Items Sold</div>
+                <div class="stat-value" id="statItems">0</div>
+            </div>
+            <div class="stat-card card">
+                <div class="stat-label">Avg Transaction</div>
+                <div class="stat-value" id="statAvg">₱0.00</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="card p-4 md:col-span-1">
+                <h3 class="font-bold mb-4">Top Products</h3>
+                <div id="topProductsList" class="flex flex-col gap-3">
+                    <!-- Top products injected here -->
+                    <p class="text-text-muted text-sm italic">No data</p>
+                </div>
+            </div>
+            <div class="card p-4 md:col-span-2">
+                <h3 class="font-bold mb-4" id="chartTitle">Daily Sales</h3>
+                <div class="chart-container" id="salesChart">
+                    <!-- Bars injected here -->
+                </div>
+            </div>
+        </div>
+
+        <h3 class="font-bold mb-4 text-xl">Transactions</h3>
+        <div id="transactionsList">
+            <!-- Transactions injected here -->
+            <div id="emptyTransactions" class="empty-state p-8 text-center hidden">
+                <p>No transactions found for this period.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/app.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/history.js"></script>
+</body>
+</html>

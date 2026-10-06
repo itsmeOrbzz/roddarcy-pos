@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - RodDarcy POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body class="bg-body text-text">
+    <header class="app-header">
+        <div class="logo">RodDarcy POS</div>
+        <nav class="nav-links">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="register.html" class="nav-link">Register</a>
+            <a href="scanner.html" class="nav-link">Scanner</a>
+            <a href="products.html" class="nav-link active">Products</a>
+            <a href="history.html" class="nav-link">History</a>
+        </nav>
+    </header>
+
+    <main class="container py-4">
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="stat-card card">
+                <div class="stat-label">Total Products</div>
+                <div class="stat-value" id="statTotalProducts">0</div>
+            </div>
+            <div class="stat-card card">
+                <div class="stat-label">Categories</div>
+                <div class="stat-value" id="statCategories">0</div>
+            </div>
+        </div>
+
+        <div class="card mb-4 p-3 flex flex-wrap gap-2 items-center justify-between">
+            <div class="flex gap-2 flex-grow max-w-md">
+                <div class="search-input-wrapper flex-grow">
+                    <input type="text" id="searchInput" class="form-input w-full" placeholder="Search products by name or barcode...">
+                </div>
+                <select id="categoryFilter" class="form-select">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button id="btnAddProduct" class="btn btn-primary">+ Add Product</button>
+            </div>
+        </div>
+
+        <div class="card table-wrapper">
+            <table class="data-table w-full">
+                <thead>
+                    <tr>
+                        <th>Barcode</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th class="text-right">Price</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                    <!-- Products rendered here -->
+                </tbody>
+            </table>
+            <div id="emptyState" class="empty-state p-8 text-center hidden">
+                <p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: 600;">No products in store inventory yet.</p>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Tap "+ Add Product" to scan a barcode and set its price!</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Product Add/Edit Modal -->
+    <div id="productModal" class="modal-overlay hidden" style="display: none;">
+        <div class="modal card p-4 w-full max-w-sm mx-auto" style="margin-top: 5rem;">
+            <h2 class="text-xl font-bold mb-4" id="modalTitle">Add Product</h2>
+            <form id="productForm">
+                <div class="form-group mb-3">
+                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Barcode</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="productBarcode" class="form-input" style="flex: 1;" placeholder="Scan or enter barcode" required>
+                        <button type="button" id="btnScanBarcode" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
+                            📷 Scan
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Product Name</label>
+                    <input type="text" id="productName" class="form-input w-full" placeholder="e.g. Coca-Cola 1.5L" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Selling Price (₱)</label>
+                    <input type="number" id="productPrice" class="form-input w-full" step="0.25" min="0" placeholder="e.g. 75.00" required>
+                </div>
+                <div class="form-group mb-4">
+                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Category</label>
+                    <select id="productCategory" class="form-select w-full" required>
+                        <!-- Options generated dynamically -->
+                    </select>
+                </div>
+                <div class="flex gap-2 justify-end" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button type="button" class="btn btn-ghost" id="btnCancelProduct">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Camera Barcode Scanner Modal -->
+    <div id="scannerModal" class="modal-overlay hidden" style="display: none; z-index: 100;">
+        <div class="modal card p-4 w-full max-w-sm mx-auto" style="margin-top: 3rem; text-align: center;">
+            <h3 class="text-lg font-bold mb-2">Scan Product Barcode</h3>
+            <p class="text-sm text-secondary mb-3">Point your camera at the product's barcode</p>
+            <div id="modalReader" style="width: 100%; border-radius: 0.5rem; overflow: hidden; background: #000; min-height: 200px;"></div>
+            <div class="mt-4" style="margin-top: 1rem;">
+                <button type="button" class="btn btn-secondary w-full" id="btnCloseScannerModal">Cancel Scan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/products.js"></script>
+</body>
+</html>
