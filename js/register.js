@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     pm.onData(async (data) => {
         if (data.type === 'scan') {
             await handleScan(data.barcode);
+        } else if (data.type === 'product_added' && data.product) {
+            await db.addProduct(data.product);
+            showToast(`New product added: ${data.product.name}`, 'success');
         }
     });
 

@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize DB on phone scanner
+    if (window.db) {
+        await db.init();
+    }
+
     // DOM elements
     const pairingPhase = document.getElementById('pairing-phase');
     const scanningPhase = document.getElementById('scanning-phase');
@@ -16,10 +21,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnCloseManualModal = document.getElementById('btn-close-manual-modal');
     const btnSendManualBarcode = document.getElementById('btn-send-manual-barcode');
 
+    // Phone Add Product Modal elements
+    const phoneAddModal = document.getElementById('phone-add-product-modal');
+    const phoneAddForm = document.getElementById('phone-add-product-form');
+    const phoneBarcodeDisplay = document.getElementById('phone-scanned-barcode-display');
+    const phoneNameInp = document.getElementById('phone-product-name');
+    const phonePriceInp = document.getElementById('phone-product-price');
+    const phoneCategorySel = document.getElementById('phone-product-category');
+    const btnClosePhoneAdd = document.getElementById('btn-close-phone-add-modal');
+    const btnCancelPhoneAdd = document.getElementById('btn-cancel-phone-add');
+
     let pm = null;
     let html5QrcodeScanner = null;
     let lastScanTime = 0;
     const SCAN_COOLDOWN = 1500;
+    let currentScannedBarcode = '';
+
+    // Populate phone category select
+    if (window.CATEGORIES && phoneCategorySel) {
+        phoneCategorySel.innerHTML = '';
+        CATEGORIES.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            phoneCategorySel.appendChild(opt);
+        });
+    }
+
+    // Helper Modal functions
+    function openModal(el) {
+        if (!el) return;
+        el.classList.remove('hidden');
+        el.classList.add('active');
+        el.style.display = 'flex';
+    }
+
+    function closeModal(el) {
+        if (!el) return;
+        el.classList.add('hidden');
+        el.classList.remove('active');
+        el.style.display = 'none';
+    }
 
     // Update Header Status Indicator
     function updateStatusUI(status, message) {
@@ -53,8 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 (errorMessage) => { /* Silent frame errors */ }
             );
         } catch (err) {
-            console.warn("QR Scanner Init Note:", err);
-            // Camera permission denied or not available; user can type pairing code manually
+            console.warn("QR Scanner camera note:", err);
         }
     }
 
@@ -64,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await html5QrcodeScanner.stop();
                 html5QrcodeScanner.clear();
             } catch (e) {
-                // Ignore stop errors if already stopped
+                // Ignore stop errors
             }
             html5QrcodeScanner = null;
         }
@@ -89,7 +130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         await stopScanner();
 
-        // Create PeerManager for scanner
         pm = new PeerManager('scanner');
 
         pm.onStatusChange((status) => {
@@ -110,13 +150,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 showToast(`Added: ${data.name || data.barcode}`, "success");
             } else if (data.type === 'NOT_FOUND') {
-                if (lastScannedStatus) {
-                    lastScannedStatus.textContent = `❌ Product not found: ${data.barcode}`;
-                    lastScannedStatus.style.color = '#ef4444';
-                }
-                showToast(`Product not found (${data.barcode})`, "error");
-                triggerFlash(true);
-                playErrorBeep();
+                // Unknown barcode received by register -> prompt to add product on phone!
+                promptAddNewProduct(data.barcode);
             }
         });
 
@@ -174,26 +209,96 @@ document.addEventListener('DOMContentLoaded', async () => {
         const now = Date.now();
         if (now - lastScanTime < SCAN_COOLDOWN) return;
         lastScanTime = now;
-        sendBarcodeToRegister(decodedText);
+        processBarcode(decodedText);
     }
     
-    function sendBarcodeToRegister(barcode) {
-        if (!pm || !pm.isConnected) {
-            showToast("Not connected to register", "error");
-            return;
-        }
-        
+    async function processBarcode(barcode) {
         triggerFlash();
         if (typeof vibrate === 'function') vibrate([100]);
         if (typeof playScanBeep === 'function') playScanBeep();
-        
-        if (lastScannedStatus) {
-            lastScannedStatus.textContent = `Sending barcode ${barcode}...`;
-            lastScannedStatus.style.color = '#f8fafc';
+
+        // Check local database first
+        let product = null;
+        if (window.db) {
+            product = await db.getProduct(barcode);
         }
-        
-        pm.sendBarcode(barcode);
+
+        if (product) {
+            // Product exists in database! Send to register cart as usual
+            if (lastScannedStatus) {
+                lastScannedStatus.textContent = `Scanned ${product.name} (${formatCurrency(product.price)})`;
+                lastScannedStatus.style.color = '#10b981';
+            }
+            if (pm && pm.isConnected) {
+                pm.sendBarcode(barcode);
+            } else {
+                showToast(`Scanned: ${product.name} - ${formatCurrency(product.price)}`, "success");
+            }
+        } else {
+            // Product NOT in database -> open Add New Product modal on phone!
+            promptAddNewProduct(barcode);
+        }
     }
+
+    function promptAddNewProduct(barcode) {
+        currentScannedBarcode = barcode;
+        if (phoneBarcodeDisplay) phoneBarcodeDisplay.textContent = barcode;
+        if (phoneNameInp) phoneNameInp.value = '';
+        if (phonePriceInp) phonePriceInp.value = '';
+        openModal(phoneAddModal);
+        if (lastScannedStatus) {
+            lastScannedStatus.textContent = `✨ New Barcode ${barcode}! Set name & price below.`;
+            lastScannedStatus.style.color = '#f59e0b';
+        }
+    }
+
+    // Save New Product from Phone Form
+    if (phoneAddForm) {
+        phoneAddForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const barcode = currentScannedBarcode || (phoneBarcodeDisplay ? phoneBarcodeDisplay.textContent.trim() : '');
+            const name = phoneNameInp ? phoneNameInp.value.trim() : '';
+            const price = phonePriceInp ? parseFloat(phonePriceInp.value) : NaN;
+            const category = phoneCategorySel ? phoneCategorySel.value : 'Other';
+
+            if (!barcode || !name || isNaN(price)) {
+                showToast("Please enter product name and selling price", "error");
+                return;
+            }
+
+            const newProduct = { barcode, name, price, category };
+
+            try {
+                if (window.db) {
+                    await db.addProduct(newProduct);
+                }
+
+                showToast(`Saved "${name}" (₱${price.toFixed(2)}) to store inventory!`, "success");
+                closeModal(phoneAddModal);
+
+                // Send to connected register
+                if (pm && pm.isConnected) {
+                    pm.send({
+                        type: 'product_added',
+                        product: newProduct
+                    });
+                    // Also send barcode so it's added to current cart
+                    pm.sendBarcode(barcode);
+                }
+
+                if (lastScannedStatus) {
+                    lastScannedStatus.textContent = `✅ Saved ${name} (₱${price.toFixed(2)})`;
+                    lastScannedStatus.style.color = '#10b981';
+                }
+            } catch (err) {
+                console.error("Error saving product on phone:", err);
+                showToast("Failed to save product: " + err.message, "error");
+            }
+        });
+    }
+
+    if (btnClosePhoneAdd) btnClosePhoneAdd.addEventListener('click', () => closeModal(phoneAddModal));
+    if (btnCancelPhoneAdd) btnCancelPhoneAdd.addEventListener('click', () => closeModal(phoneAddModal));
 
     function triggerFlash(isError = false) {
         if (!scanFlash) return;
@@ -234,14 +339,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Manual Barcode Modal Handlers
     if (btnToggleManual) {
         btnToggleManual.addEventListener('click', () => {
-            if (manualBarcodeModal) manualBarcodeModal.classList.remove('hidden');
+            openModal(manualBarcodeModal);
             if (manualBarcodeInput) manualBarcodeInput.focus();
         });
     }
 
     if (btnCloseManualModal) {
         btnCloseManualModal.addEventListener('click', () => {
-            if (manualBarcodeModal) manualBarcodeModal.classList.add('hidden');
+            closeModal(manualBarcodeModal);
         });
     }
 
@@ -249,9 +354,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sendManual = () => {
             const barcode = manualBarcodeInput.value.trim();
             if (barcode) {
-                sendBarcodeToRegister(barcode);
+                processBarcode(barcode);
                 manualBarcodeInput.value = '';
-                if (manualBarcodeModal) manualBarcodeModal.classList.add('hidden');
+                closeModal(manualBarcodeModal);
             }
         };
 
