@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let lastScanTime = 0;
     const SCAN_COOLDOWN = 1500;
     let currentScannedBarcode = '';
+    let lastScannedBarcode = '';
 
     // Helper Modal functions
     function openModal(el) {
@@ -53,6 +54,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.classList.add('hidden');
         el.classList.remove('active');
         el.style.display = 'none';
+    }
+
+    function isModalOpen() {
+        return (manualBarcodeModal && manualBarcodeModal.classList.contains('active')) ||
+               (phoneAddModal && phoneAddModal.classList.contains('active'));
     }
 
     // Update Header Status Indicator
@@ -159,6 +165,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 pm.sendBarcode(data.product.barcode);
             } else if (data.type === 'ACK') {
+                triggerFlash(false);
+                if (typeof vibrate === 'function') vibrate([100]);
+                if (typeof playScanBeep === 'function') playScanBeep();
                 if (lastScannedStatus) {
                     lastScannedStatus.textContent = `✅ ${data.name || data.barcode}`;
                     lastScannedStatus.style.color = '#10b981';
@@ -172,6 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         setTimeout(() => pm.sendBarcode(data.barcode), 250);
                     }
                 } else {
+                    triggerFlash(true);
                     promptAddNewProduct(data.barcode);
                 }
             }
@@ -235,17 +245,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function onBarcodeScanned(decodedText) {
+        if (isModalOpen()) return;
+
         const now = Date.now();
-        if (now - lastScanTime < SCAN_COOLDOWN) return;
+        if (decodedText === lastScannedBarcode && now - lastScanTime < 3000) {
+            return;
+        }
+        if (now - lastScanTime < SCAN_COOLDOWN) {
+            return;
+        }
+
         lastScanTime = now;
+        lastScannedBarcode = decodedText;
         processBarcode(decodedText);
     }
     
     async function processBarcode(barcode) {
-        triggerFlash();
-        if (typeof vibrate === 'function') vibrate([100]);
-        if (typeof playScanBeep === 'function') playScanBeep();
-
         // 1. Check local phone database first
         let product = null;
         if (window.db) {
@@ -254,6 +269,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (product) {
             // Product exists locally! Send to register cart as usual
+            triggerFlash(false);
+            if (typeof vibrate === 'function') vibrate([100]);
+            if (typeof playScanBeep === 'function') playScanBeep();
+
             if (lastScannedStatus) {
                 lastScannedStatus.textContent = `Scanned ${product.name} (${formatCurrency(product.price)})`;
                 lastScannedStatus.style.color = '#10b981';
@@ -268,6 +287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             pm.send({ type: 'query_product', barcode: barcode });
         } else {
             // 3. Not found & not connected -> prompt to add new product
+            triggerFlash(true);
             promptAddNewProduct(barcode);
         }
     }
@@ -325,6 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 showToast(`Saved "${name}" (₱${price.toFixed(2)}) to store inventory!`, "success");
                 closeModal(phoneAddModal);
+                lastScannedBarcode = ''; // Reset so barcode can be scanned again immediately
 
                 // Send to connected register
                 if (pm && pm.isConnected) {
@@ -354,13 +375,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function triggerFlash(isError = false) {
         if (!scanFlash) return;
-        if (isError) scanFlash.classList.add('flash-red');
-        else scanFlash.classList.remove('flash-red');
-        
-        scanFlash.classList.add('active');
+        scanFlash.className = 'scan-flash' + (isError ? ' flash-red active' : ' active');
         setTimeout(() => {
-            scanFlash.classList.remove('active');
-        }, 200);
+            scanFlash.className = 'scan-flash';
+        }, 300);
     }
 
     // Manual Connection Listeners

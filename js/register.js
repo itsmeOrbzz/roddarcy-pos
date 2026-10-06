@@ -128,9 +128,8 @@ async function handleScan(barcode) {
         playScanBeep();
         pm.sendAck(barcode, product.name);
     } else {
-        playErrorBeep();
         pm.sendNotFound(barcode);
-        showToast('Unknown barcode: ' + barcode, 'warning', 3000);
+        showToast('Scanned unknown barcode: ' + barcode + '. Add item on phone scanner.', 'info', 2500);
     }
 }
 
