@@ -1,11 +1,11 @@
-const CACHE_NAME = 'roddarcy-pos-v1';
+const CACHE_NAME = 'roddarcy-pos-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './register.html',
-  './scanner.html',
-  './products.html',
-  './history.html',
+  './register/',
+  './scanner/',
+  './products/',
+  './history/',
   './css/styles.css',
   './js/app.js',
   './js/db.js',
@@ -40,7 +40,6 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Stale-while-revalidate or Network-first fallback to cache
   e.respondWith(
     fetch(e.request)
       .then((response) => {

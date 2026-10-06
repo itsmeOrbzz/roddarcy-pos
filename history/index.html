@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales History - RodDarcy POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="manifest" href="../manifest.json">
+</head>
+<body class="bg-body text-text">
+    <header class="app-header">
+        <div class="logo">RodDarcy POS</div>
+        <nav class="nav-links">
+            <a href="../" class="nav-link">Home</a>
+            <a href="../register/" class="nav-link">Register</a>
+            <a href="../scanner/" class="nav-link">Scanner</a>
+            <a href="../products/" class="nav-link">Products</a>
+            <a href="./" class="nav-link active">History</a>
+        </nav>
+    </header>
+
+    <main class="container py-4">
+        <!-- Date Selector & Quick Filters -->
+        <div class="card mb-4 p-3 flex flex-wrap gap-2 items-center justify-between">
+            <div class="flex items-center gap-2">
+                <label for="historyDate" class="font-semibold text-sm">Date:</label>
+                <input type="date" id="historyDate" class="form-input">
+            </div>
+            <div class="flex gap-2">
+                <button id="btnToday" class="btn btn-secondary btn-sm">Today</button>
+                <button id="btnThisWeek" class="btn btn-secondary btn-sm">This Week</button>
+                <button id="btnExportHistory" class="btn btn-outline btn-sm">Export CSV</button>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="stat-card card">
+                <div class="stat-label">Total Sales</div>
+                <div class="stat-value" id="statTotalSales">₱0.00</div>
+            </div>
+            <div class="stat-card card">
+                <div class="stat-label">Transactions</div>
+                <div class="stat-value" id="statTxCount">0</div>
+            </div>
+            <div class="stat-card card">
+                <div class="stat-label">Items Sold</div>
+                <div class="stat-value" id="statItemsSold">0</div>
+            </div>
+            <div class="stat-card card">
+                <div class="stat-label">Avg. per Sale</div>
+                <div class="stat-value" id="statAvgSale">₱0.00</div>
+            </div>
+        </div>
+
+        <!-- Weekly Chart & Top Products Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Weekly Bar Chart -->
+            <div class="card p-4">
+                <h3 class="text-lg font-bold mb-4">Weekly Sales Trend</h3>
+                <div class="chart-container" style="display: flex; align-items: flex-end; justify-content: space-between; height: 180px; padding-top: 1rem;">
+                    <div class="chart-bar-wrapper text-center flex-grow" style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                        <div id="barMon" class="chart-bar" style="width: 24px; background: var(--primary-color, #0d9488); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s;"></div>
+                        <span class="text-xs mt-2 text-text-muted">Mon</span>
+                    </div>
+                    <div class="chart-bar-wrapper text-center flex-grow" style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                        <div id="barTue" class="chart-bar" style="width: 24px; background: var(--primary-color, #0d9488); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s;"></div>
+                        <span class="text-xs mt-2 text-text-muted">Tue</span>
+                    </div>
+                    <div class="chart-bar-wrapper text-center flex-grow" style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                        <div id="barWed" class="chart-bar" style="width: 24px; background: var(--primary-color, #0d9488); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s;"></div>
+                        <span class="text-xs mt-2 text-text-muted">Wed</span>
+                    </div>
+                    <div class="chart-bar-wrapper text-center flex-grow" style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                        <div id="barThu" class="chart-bar" style="width: 24px; background: var(--primary-color, #0d9488); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s;"></div>
+                        <span class="text-xs mt-2 text-text-muted">Thu</span>
+                    </div>
+                    <div class="chart-bar-wrapper text-center flex-grow" style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                        <div id="barFri" class="chart-bar" style="width: 24px; background: var(--primary-color, #0d9488); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s;"></div>
+                        <span class="text-xs mt-2 text-text-muted">Fri</span>
+                    </div>
+                    <div class="chart-bar-wrapper text-center flex-grow" style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                        <div id="barSat" class="chart-bar" style="width: 24px; background: var(--primary-color, #0d9488); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s;"></div>
+                        <span class="text-xs mt-2 text-text-muted">Sat</span>
+                    </div>
+                    <div class="chart-bar-wrapper text-center flex-grow" style="display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;">
+                        <div id="barSun" class="chart-bar" style="width: 24px; background: var(--primary-color, #0d9488); border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.3s;"></div>
+                        <span class="text-xs mt-2 text-text-muted">Sun</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="card p-4">
+                <h3 class="text-lg font-bold mb-4">Top Selling Products</h3>
+                <div id="topProductsList" class="flex flex-col gap-2">
+                    <p class="text-sm text-text-muted">No sales data for this period.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions List -->
+        <div class="card p-4">
+            <h3 class="text-lg font-bold mb-4">Recent Transactions</h3>
+            <div id="transactionsList" class="flex flex-col gap-3">
+                <p class="text-sm text-text-muted text-center p-4">No transactions found for the selected date.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Transaction Detail Modal -->
+    <div id="txModal" class="modal-overlay hidden" style="display: none;">
+        <div class="modal card p-4 w-full max-w-md mx-auto" style="margin-top: 5rem;">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold" id="txModalTitle">Transaction Details</h3>
+                <button type="button" id="btnCloseTxModal" class="btn btn-ghost btn-icon">✕</button>
+            </div>
+            <div id="txModalContent"></div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../js/app.js"></script>
+    <script src="../js/db.js"></script>
+    <script src="../js/history.js"></script>
+</body>
+</html>

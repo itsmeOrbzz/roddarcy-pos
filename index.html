@@ -32,22 +32,22 @@
         </header>
 
         <section class="landing-actions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; width: 100%; max-width: 800px; margin-bottom: 3rem;">
-            <a href="register.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+            <a href="register/" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
                 <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📋</div>
                 <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Open Register</h2>
                 <p style="color: var(--text-secondary, #9ca3af);">iPad display & checkout</p>
             </a>
-            <a href="scanner.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+            <a href="scanner/" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
                 <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📱</div>
                 <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Open Scanner</h2>
                 <p style="color: var(--text-secondary, #9ca3af);">Scan barcodes to register</p>
             </a>
-            <a href="products.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+            <a href="products/" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
                 <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📦</div>
                 <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Manage Products</h2>
                 <p style="color: var(--text-secondary, #9ca3af);">Add & edit your inventory</p>
             </a>
-            <a href="history.html" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
+            <a href="history/" class="landing-card card" style="display: flex; flex-direction: column; align-items: center; padding: 2rem; text-align: center; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s;">
                 <div class="card-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">📊</div>
                 <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Sales History</h2>
                 <p style="color: var(--text-secondary, #9ca3af);">View daily & weekly reports</p>
@@ -112,7 +112,6 @@
             const saveSettingsBtn = document.getElementById('saveSettingsBtn');
             const settingsForm = document.getElementById('settingsForm');
 
-            // Form inputs
             const inputName = document.getElementById('storeName');
             const inputAddress = document.getElementById('storeAddress');
             const inputPhone = document.getElementById('storePhone');
@@ -133,7 +132,7 @@
             function showModal() {
                 loadSettings();
                 settingsModal.classList.remove('hidden');
-                settingsModal.classList.add('flex'); // Add flex to make it visible
+                settingsModal.classList.add('flex');
             }
 
             function hideModal() {
