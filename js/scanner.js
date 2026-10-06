@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const phoneBarcodeDisplay = document.getElementById('phone-scanned-barcode-display');
     const phoneNameInp = document.getElementById('phone-product-name');
     const phonePriceInp = document.getElementById('phone-product-price');
+    const phoneWholesalePriceInp = document.getElementById('phone-wholesale-price');
+    const phoneWholesaleQtyInp = document.getElementById('phone-wholesale-qty');
     const phoneCategorySel = document.getElementById('phone-product-category');
     const btnClosePhoneAdd = document.getElementById('btn-close-phone-add-modal');
     const btnCancelPhoneAdd = document.getElementById('btn-cancel-phone-add');
@@ -36,17 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     let lastScanTime = 0;
     const SCAN_COOLDOWN = 1500;
     let currentScannedBarcode = '';
-
-    // Populate phone category select
-    if (window.CATEGORIES && phoneCategorySel) {
-        phoneCategorySel.innerHTML = '';
-        CATEGORIES.forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            phoneCategorySel.appendChild(opt);
-        });
-    }
 
     // Helper Modal functions
     function openModal(el) {
@@ -142,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        pm.onData((data) => {
+        pm.onData(async (data) => {
             if (data.type === 'ACK') {
                 if (lastScannedStatus) {
                     lastScannedStatus.textContent = `✅ ${data.name || data.barcode}`;
@@ -150,8 +141,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 showToast(`Added: ${data.name || data.barcode}`, "success");
             } else if (data.type === 'NOT_FOUND') {
-                // Unknown barcode received by register -> prompt to add product on phone!
-                promptAddNewProduct(data.barcode);
+                // Check if phone already has product in local DB before prompting!
+                const existing = window.db ? await db.getProduct(data.barcode) : null;
+                if (existing) {
+                    // Item exists locally; resync to register
+                    if (pm && pm.isConnected) {
+                        pm.send({ type: 'product_added', product: existing });
+                        setTimeout(() => pm.sendBarcode(data.barcode), 250);
+                    }
+                } else {
+                    promptAddNewProduct(data.barcode);
+                }
             }
         });
 
@@ -241,10 +241,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function promptAddNewProduct(barcode) {
+        if (!barcode) return;
+        // Don't re-open if modal is already open for this barcode
+        if (phoneAddModal && phoneAddModal.classList.contains('active') && currentScannedBarcode === barcode) {
+            return;
+        }
+
         currentScannedBarcode = barcode;
         if (phoneBarcodeDisplay) phoneBarcodeDisplay.textContent = barcode;
         if (phoneNameInp) phoneNameInp.value = '';
         if (phonePriceInp) phonePriceInp.value = '';
+        if (phoneWholesalePriceInp) phoneWholesalePriceInp.value = '';
+        if (phoneWholesaleQtyInp) phoneWholesaleQtyInp.value = '';
+
         openModal(phoneAddModal);
         if (lastScannedStatus) {
             lastScannedStatus.textContent = `✨ New Barcode ${barcode}! Set name & price below.`;
@@ -259,14 +268,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             const barcode = currentScannedBarcode || (phoneBarcodeDisplay ? phoneBarcodeDisplay.textContent.trim() : '');
             const name = phoneNameInp ? phoneNameInp.value.trim() : '';
             const price = phonePriceInp ? parseFloat(phonePriceInp.value) : NaN;
-            const category = phoneCategorySel ? phoneCategorySel.value : 'Other';
+            const wholesalePriceVal = phoneWholesalePriceInp && phoneWholesalePriceInp.value !== '' ? parseFloat(phoneWholesalePriceInp.value) : null;
+            const wholesaleMinQtyVal = phoneWholesaleQtyInp && phoneWholesaleQtyInp.value !== '' ? parseInt(phoneWholesaleQtyInp.value) : null;
+            const category = phoneCategorySel ? phoneCategorySel.value : 'General Wholesale';
 
             if (!barcode || !name || isNaN(price)) {
                 showToast("Please enter product name and selling price", "error");
                 return;
             }
 
-            const newProduct = { barcode, name, price, category };
+            const newProduct = { 
+                barcode, 
+                name, 
+                price, 
+                wholesalePrice: wholesalePriceVal,
+                wholesaleMinQty: wholesaleMinQtyVal,
+                category 
+            };
 
             try {
                 if (window.db) {
@@ -282,8 +300,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         type: 'product_added',
                         product: newProduct
                     });
-                    // Also send barcode so it's added to current cart
-                    pm.sendBarcode(barcode);
+                    // Small delay to let register save product to its IndexedDB before adding to cart
+                    setTimeout(() => {
+                        pm.sendBarcode(barcode);
+                    }, 300);
                 }
 
                 if (lastScannedStatus) {
