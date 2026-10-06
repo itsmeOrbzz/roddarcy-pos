@@ -69,10 +69,12 @@ class ProductDB {
   async addProduct(product) {
     const store = this._getStore('products', 'readwrite');
     const record = {
-      barcode: product.barcode,
-      name: product.name,
-      price: Number(product.price),
-      category: product.category || 'Other',
+      barcode: String(product.barcode).trim(),
+      name: String(product.name).trim(),
+      price: Number(product.price) || 0,
+      wholesalePrice: product.wholesalePrice !== undefined && product.wholesalePrice !== '' && !isNaN(product.wholesalePrice) ? Number(product.wholesalePrice) : null,
+      wholesaleMinQty: product.wholesaleMinQty !== undefined && product.wholesaleMinQty !== '' && !isNaN(product.wholesaleMinQty) ? Number(product.wholesaleMinQty) : null,
+      category: product.category || 'General Wholesale',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

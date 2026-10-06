@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products - RodDarcy POS</title>
+    <title>Products - RodDarcy Wholesale POS</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="manifest" href="../manifest.json">
@@ -23,7 +23,7 @@
     <main class="container py-4">
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div class="stat-card card">
-                <div class="stat-label">Total Products</div>
+                <div class="stat-label">Total Wholesale Products</div>
                 <div class="stat-value" id="statTotalProducts">0</div>
             </div>
             <div class="stat-card card">
@@ -53,7 +53,8 @@
                         <th>Barcode</th>
                         <th>Name</th>
                         <th>Category</th>
-                        <th class="text-right">Price</th>
+                        <th class="text-right">Retail Price</th>
+                        <th class="text-right">Wholesale Tier</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
@@ -62,19 +63,19 @@
                 </tbody>
             </table>
             <div id="emptyState" class="empty-state p-8 text-center hidden">
-                <p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: 600;">No products in store inventory yet.</p>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Tap "+ Add Product" to scan a barcode and set its price!</p>
+                <p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: 600;">No wholesale products in store inventory yet.</p>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Tap "+ Add Product" to set up your retail & wholesale prices!</p>
             </div>
         </div>
     </main>
 
     <!-- Product Add/Edit Modal -->
     <div id="productModal" class="modal-overlay hidden" style="display: none;">
-        <div class="modal card p-4 w-full max-w-sm mx-auto" style="margin-top: 5rem;">
-            <h2 class="text-xl font-bold mb-4" id="modalTitle">Add Product</h2>
+        <div class="modal card p-4 w-full max-w-md mx-auto" style="margin-top: 3rem;">
+            <h2 class="text-xl font-bold mb-4" id="modalTitle">Add Wholesale Product</h2>
             <form id="productForm">
                 <div class="form-group mb-3">
-                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Barcode</label>
+                    <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Barcode</label>
                     <div style="display: flex; gap: 0.5rem;">
                         <input type="text" id="productBarcode" class="form-input" style="flex: 1;" placeholder="Scan or enter barcode" required>
                         <button type="button" id="btnScanBarcode" class="btn btn-secondary" style="display: flex; align-items: center; gap: 0.25rem; white-space: nowrap;">
@@ -82,20 +83,40 @@
                         </button>
                     </div>
                 </div>
+
                 <div class="form-group mb-3">
-                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Product Name</label>
-                    <input type="text" id="productName" class="form-input w-full" placeholder="e.g. Coca-Cola 1.5L" required>
+                    <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Product Name</label>
+                    <input type="text" id="productName" class="form-input w-full" placeholder="e.g. Great Taste White Coffee 30g (Box of 240)" required>
                 </div>
-                <div class="form-group mb-3">
-                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Selling Price (₱)</label>
-                    <input type="number" id="productPrice" class="form-input w-full" step="0.25" min="0" placeholder="e.g. 75.00" required>
+
+                <div class="grid grid-cols-2 gap-3 mb-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div class="form-group">
+                        <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Retail Price (₱)</label>
+                        <input type="number" id="productPrice" class="form-input w-full" step="0.25" min="0" placeholder="e.g. 9.00 / pc" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Category</label>
+                        <select id="productCategory" class="form-select w-full" required>
+                            <!-- Options generated dynamically -->
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group mb-4">
-                    <label class="form-label" style="display: block; margin-bottom: 0.5rem;">Category</label>
-                    <select id="productCategory" class="form-select w-full" required>
-                        <!-- Options generated dynamically -->
-                    </select>
+
+                <!-- Wholesale Tier Section -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px dashed var(--color-border); border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 1rem;">
+                    <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">📦 Bulk / Wholesale Tier (Optional)</h4>
+                    <div class="grid grid-cols-2 gap-3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group">
+                            <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Wholesale Price (₱)</label>
+                            <input type="number" id="productWholesalePrice" class="form-input w-full" step="0.25" min="0" placeholder="e.g. 7.50 / pc">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Min. Qty for Wholesale</label>
+                            <input type="number" id="productWholesaleMinQty" class="form-input w-full" step="1" min="2" placeholder="e.g. 10 (or 1 box)">
+                        </div>
+                    </div>
                 </div>
+
                 <div class="flex gap-2 justify-end" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
                     <button type="button" class="btn btn-ghost" id="btnCancelProduct">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Product</button>

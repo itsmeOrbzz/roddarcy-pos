@@ -86,25 +86,41 @@
 
     <!-- Phone Add New Product Modal -->
     <div id="phone-add-product-modal" class="modal-overlay hidden" style="display: none; z-index: 150;">
-        <div class="modal card card-solid" style="max-width: 360px; width: 90%; margin: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3 style="font-size: 1.2rem; font-weight: 700; margin: 0;">📦 Add New Product</h3>
+        <div class="modal card card-solid" style="max-width: 380px; width: 92%; margin: auto; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">📦 Add Wholesale Item</h3>
                 <button id="btn-close-phone-add-modal" class="btn btn-ghost btn-sm">✕</button>
             </div>
-            <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 1rem;">
+            <p style="font-size: 0.8rem; color: var(--color-text-secondary); margin-bottom: 0.75rem;">
                 Barcode: <strong id="phone-scanned-barcode-display" style="font-family: var(--font-mono); color: var(--color-primary);"></strong>
             </p>
             <form id="phone-add-product-form">
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                    <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Product Name</label>
-                    <input type="text" id="phone-product-name" class="form-input" placeholder="e.g. Piattos Cheese 40g" required>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                    <label class="form-label" style="display: block; margin-bottom: 0.2rem; font-size: 0.8rem;">Product Name</label>
+                    <input type="text" id="phone-product-name" class="form-input" placeholder="e.g. Great Taste White 30g" required>
                 </div>
-                <div class="form-group" style="margin-bottom: 0.75rem;">
-                    <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Selling Price (₱)</label>
-                    <input type="number" id="phone-product-price" class="form-input" step="0.25" min="0" placeholder="e.g. 18.00" required>
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                    <label class="form-label" style="display: block; margin-bottom: 0.2rem; font-size: 0.8rem;">Retail Price (₱)</label>
+                    <input type="number" id="phone-product-price" class="form-input" step="0.25" min="0" placeholder="e.g. 9.00 / pc" required>
                 </div>
-                <div class="form-group" style="margin-bottom: 1.25rem;">
-                    <label class="form-label" style="display: block; margin-bottom: 0.25rem;">Category</label>
+                
+                <!-- Wholesale Bulk Pricing optional section -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px dashed var(--color-border); border-radius: 0.4rem; padding: 0.5rem; margin-bottom: 0.6rem;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--color-primary); display: block; margin-bottom: 0.4rem;">BULK / WHOLESALE TIER (OPTIONAL)</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+                        <div>
+                            <label style="font-size: 0.7rem; color: var(--color-text-secondary); display: block;">Bulk Price (₱)</label>
+                            <input type="number" id="phone-wholesale-price" class="form-input" step="0.25" min="0" placeholder="e.g. 7.50">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.7rem; color: var(--color-text-secondary); display: block;">Min Qty (pcs)</label>
+                            <input type="number" id="phone-wholesale-qty" class="form-input" step="1" min="2" placeholder="e.g. 10">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label class="form-label" style="display: block; margin-bottom: 0.2rem; font-size: 0.8rem;">Category</label>
                     <select id="phone-product-category" class="form-select" required>
                         <!-- Populated dynamically -->
                     </select>

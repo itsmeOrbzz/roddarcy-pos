@@ -17,6 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const productBarcodeInp = document.getElementById('productBarcode');
     const productNameInp = document.getElementById('productName');
     const productPriceInp = document.getElementById('productPrice');
+    const productWholesalePriceInp = document.getElementById('productWholesalePrice');
+    const productWholesaleMinQtyInp = document.getElementById('productWholesaleMinQty');
     const productCategoryInp = document.getElementById('productCategory');
     const modalTitle = document.getElementById('modalTitle');
     
@@ -46,15 +48,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.style.display = 'none';
     }
     
-    // Populate categories
-    if (window.CATEGORIES) {
-        const catSelect = document.getElementById('productCategory');
-        catSelect.innerHTML = '';
-        CATEGORIES.forEach(cat => {
+    // Populate categories reliably
+    const catList = window.CATEGORIES || [
+        'Beverages & Soft Drinks',
+        'Snacks & Biscuits',
+        'Canned & Packaged Goods',
+        'Noodles & Instant Meals',
+        'Rice & Bulk Grains',
+        'Cooking & Condiments',
+        'Personal Care & Toiletries',
+        'Household & Cleaning',
+        'Paper & Packaging Materials',
+        'General Wholesale'
+    ];
+
+    if (productCategoryInp && categoryFilter) {
+        productCategoryInp.innerHTML = '';
+        categoryFilter.innerHTML = '<option value="">All Categories</option>';
+
+        catList.forEach(cat => {
             const opt = document.createElement('option');
             opt.value = cat;
             opt.textContent = cat;
-            catSelect.appendChild(opt);
+            productCategoryInp.appendChild(opt);
             
             const filterOpt = document.createElement('option');
             filterOpt.value = cat;
@@ -94,11 +110,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             emptyState.style.display = 'none';
             filtered.forEach(p => {
                 const tr = document.createElement('tr');
+                
+                let wholesaleTierDisplay = '<span class="text-muted" style="color: var(--color-text-muted); font-size: 0.8rem;">None</span>';
+                if (p.wholesalePrice && p.wholesaleMinQty) {
+                    wholesaleTierDisplay = `<span style="font-weight: 600; color: var(--color-success, #00e676);">${formatCurrency(p.wholesalePrice)}</span> <span style="font-size: 0.75rem; color: var(--color-text-secondary);">(≥ ${p.wholesaleMinQty} pcs)</span>`;
+                }
+
                 tr.innerHTML = `
                     <td style="font-family: var(--font-mono, monospace); font-weight: 600;">${p.barcode}</td>
                     <td style="font-weight: 500;">${p.name}</td>
-                    <td><span class="badge badge-outline">${p.category}</span></td>
-                    <td class="text-right" style="font-weight: 700; color: var(--primary-color, #0d9488);">${formatCurrency(p.price)}</td>
+                    <td><span class="badge badge-outline">${p.category || 'General'}</span></td>
+                    <td class="text-right" style="font-weight: 700; color: var(--color-primary, #00d4aa);">${formatCurrency(p.price)}</td>
+                    <td class="text-right">${wholesaleTierDisplay}</td>
                     <td class="text-right">
                         <button class="btn btn-icon btn-sm edit-btn" data-barcode="${p.barcode}">✏️ Edit</button>
                         <button class="btn btn-icon btn-sm btn-danger delete-btn" data-barcode="${p.barcode}">🗑️ Del</button>
@@ -129,11 +152,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (product) {
                 isEditing = true;
                 originalBarcode = barcode;
-                modalTitle.textContent = 'Edit Product';
+                modalTitle.textContent = 'Edit Wholesale Product';
                 productBarcodeInp.value = product.barcode;
                 productNameInp.value = product.name;
                 productPriceInp.value = product.price;
-                productCategoryInp.value = product.category;
+                productWholesalePriceInp.value = product.wholesalePrice !== null && product.wholesalePrice !== undefined ? product.wholesalePrice : '';
+                productWholesaleMinQtyInp.value = product.wholesaleMinQty !== null && product.wholesaleMinQty !== undefined ? product.wholesaleMinQty : '';
+                productCategoryInp.value = product.category || catList[0];
                 openModal(productModal);
             }
         } else if (deleteBtn) {
@@ -152,7 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btnAddProduct').addEventListener('click', () => {
         isEditing = false;
         originalBarcode = '';
-        modalTitle.textContent = 'Add Product';
+        modalTitle.textContent = 'Add Wholesale Product';
         productForm.reset();
         openModal(productModal);
     });
@@ -169,22 +194,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         const barcode = productBarcodeInp.value.trim();
         const name = productNameInp.value.trim();
         const price = parseFloat(productPriceInp.value);
+        const wholesalePriceVal = productWholesalePriceInp.value !== '' ? parseFloat(productWholesalePriceInp.value) : null;
+        const wholesaleMinQtyVal = productWholesaleMinQtyInp.value !== '' ? parseInt(productWholesaleMinQtyInp.value) : null;
         const category = productCategoryInp.value;
         
         if (!barcode || !name || isNaN(price)) {
-            showToast('Please fill in all product fields correctly.', 'error');
+            showToast('Please fill in barcode, name, and retail price.', 'error');
             return;
         }
 
-        const product = { barcode, name, price, category };
+        const product = { 
+            barcode, 
+            name, 
+            price, 
+            wholesalePrice: wholesalePriceVal,
+            wholesaleMinQty: wholesaleMinQtyVal,
+            category 
+        };
         
         try {
             if (isEditing && originalBarcode && originalBarcode !== barcode) {
-                // Barcode changed: remove old key first
                 await db.deleteProduct(originalBarcode);
             }
             await db.addProduct(product);
-            showToast(isEditing ? `Updated "${name}"` : `Added "${name}" to inventory`, 'success');
+            showToast(isEditing ? `Updated "${name}"` : `Added "${name}" to wholesale inventory`, 'success');
             closeModal(productModal);
             await loadProducts();
         } catch (err) {
@@ -207,9 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // ==========================================
     // Camera Barcode Scanner for Add Product Modal
-    // ==========================================
     btnScanBarcode.addEventListener('click', () => {
         startScanner();
     });
@@ -247,16 +278,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             { facingMode: 'environment' },
             config,
             (decodedText) => {
-                // Successfully scanned barcode
                 if (typeof playScanBeep === 'function') playScanBeep();
                 productBarcodeInp.value = decodedText;
                 showToast(`Scanned barcode: ${decodedText}`, 'success');
                 stopScanner();
                 setTimeout(() => productNameInp.focus(), 300);
             },
-            (errorMessage) => {
-                // Ignore silent frame errors
-            }
+            (errorMessage) => { /* Ignore frame error */ }
         ).catch(err => {
             console.error('Camera access error:', err);
             showToast('Could not access camera. Please enter barcode manually.', 'error');

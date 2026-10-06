@@ -3,38 +3,70 @@
    ============================================================ */
 
 // ========================
-// Categories
+// Categories (Explicitly attached to window)
 // ========================
-const CATEGORIES = [
-  'Snacks',
-  'Beverages',
-  'Canned Goods',
-  'Noodles',
-  'Personal Care',
-  'Household',
-  'Condiments',
-  'Other'
+window.CATEGORIES = [
+  'Beverages & Soft Drinks',
+  'Snacks & Biscuits',
+  'Canned & Packaged Goods',
+  'Noodles & Instant Meals',
+  'Rice & Bulk Grains',
+  'Cooking & Condiments',
+  'Personal Care & Toiletries',
+  'Household & Cleaning',
+  'Paper & Packaging Materials',
+  'General Wholesale'
 ];
+const CATEGORIES = window.CATEGORIES;
 
 // ========================
 // Default Product Catalog (Kept empty for custom store setup)
 // ========================
-const DEFAULT_PRODUCTS = [];
-
+window.DEFAULT_PRODUCTS = [];
+const DEFAULT_PRODUCTS = window.DEFAULT_PRODUCTS;
 
 
 // ========================
 // Currency Formatting
 // ========================
 function formatCurrency(amount) {
-  return '₱' + Number(amount).toFixed(2);
+  return '₱' + Number(amount || 0).toFixed(2);
 }
 
 function formatCurrencyCompact(amount) {
-  if (amount >= 1000) {
-    return '₱' + (amount / 1000).toFixed(1) + 'k';
+  const num = Number(amount) || 0;
+  if (num >= 1000) {
+    return '₱' + (num / 1000).toFixed(1) + 'k';
   }
-  return formatCurrency(amount);
+  return formatCurrency(num);
+}
+
+
+// ========================
+// Wholesale Pricing Calculation
+// ========================
+function getEffectiveUnitPrice(product, quantity) {
+  const qty = Number(quantity) || 1;
+  const retailPrice = Number(product.price) || 0;
+  const wholesalePrice = Number(product.wholesalePrice);
+  const wholesaleMinQty = Number(product.wholesaleMinQty);
+
+  if (!isNaN(wholesalePrice) && wholesalePrice > 0 && !isNaN(wholesaleMinQty) && wholesaleMinQty > 0) {
+    if (qty >= wholesaleMinQty) {
+      return {
+        unitPrice: wholesalePrice,
+        isWholesale: true,
+        retailPrice: retailPrice,
+        savings: (retailPrice - wholesalePrice) * qty
+      };
+    }
+  }
+  return {
+    unitPrice: retailPrice,
+    isWholesale: false,
+    retailPrice: retailPrice,
+    savings: 0
+  };
 }
 
 
@@ -50,101 +82,72 @@ function formatDate(date) {
   });
 }
 
-function formatTime(date) {
-  const d = new Date(date);
-  return d.toLocaleTimeString('en-PH', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  });
-}
-
 function formatDateTime(date) {
-  return formatDate(date) + ' ' + formatTime(date);
-}
-
-function formatDateISO(date) {
   const d = new Date(date);
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
-}
-
-function getStartOfDay(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function getEndOfDay(date) {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-function getStartOfWeek(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-
-// ========================
-// ID Generation
-// ========================
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+  return d.toLocaleDateString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }) + ' ' + d.toLocaleTimeString('en-PH', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function generateReceiptNumber() {
   const now = new Date();
-  const dateStr = String(now.getMonth() + 1).padStart(2, '0') +
-    String(now.getDate()).padStart(2, '0');
-  const seq = String(Math.floor(Math.random() * 9999)).padStart(4, '0');
-  return dateStr + '-' + seq;
+  const year = now.getFullYear().toString().slice(-2);
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const day = now.getDate().toString().padStart(2, '0');
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `WS-${year}${month}${day}-${random}`;
 }
 
 
 // ========================
-// Audio Feedback
+// Audio Feedback (Beep)
 // ========================
 let audioCtx = null;
 
 function getAudioContext() {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      audioCtx = new AudioContext();
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
   }
   return audioCtx;
 }
 
-function playBeep(frequency = 1200, duration = 0.12, volume = 0.15) {
+function playBeep(freq = 800, duration = 0.1, volume = 0.2) {
   try {
     const ctx = getAudioContext();
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    if (!ctx) return;
 
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-    gainNode.gain.setValueAtTime(volume, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
   } catch (e) {
-    // Audio not available — fail silently
+    // Audio context not allowed without user gesture
   }
 }
 
 function playScanBeep() {
-  playBeep(1200, 0.1, 0.12);
-  setTimeout(() => playBeep(1600, 0.08, 0.1), 80);
+  playBeep(1200, 0.08, 0.2);
 }
 
 function playErrorBeep() {
@@ -155,6 +158,16 @@ function playSuccessSound() {
   playBeep(800, 0.08, 0.1);
   setTimeout(() => playBeep(1200, 0.08, 0.1), 100);
   setTimeout(() => playBeep(1600, 0.12, 0.1), 200);
+}
+
+
+// ========================
+// Haptic Feedback
+// ========================
+function vibrate(pattern = [50]) {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
 }
 
 
@@ -204,11 +217,11 @@ function showToast(message, type = 'info', duration = 3500) {
 // Store Settings
 // ========================
 const DEFAULT_SETTINGS = {
-  storeName: 'Your Store Name',
-  storeAddress: '123 Main St, Cebu City',
+  storeName: 'Wholesale Store',
+  storeAddress: 'Cebu City, Philippines',
   storePhone: '',
-  storeTagline: 'Thank you for your purchase!',
-  receiptFooter: 'Please come again!',
+  storeTagline: 'Quality Wholesale & Retail',
+  receiptFooter: 'Thank you for your business!',
   currency: '₱'
 };
 
@@ -218,8 +231,10 @@ function getStoreSettings() {
     if (saved) {
       return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
     }
-  } catch (e) { /* use defaults */ }
-  return { ...DEFAULT_SETTINGS };
+  } catch (e) {
+    // Ignore localStorage error
+  }
+  return DEFAULT_SETTINGS;
 }
 
 function saveStoreSettings(settings) {
@@ -233,20 +248,10 @@ function saveStoreSettings(settings) {
 
 
 // ========================
-// Vibration Feedback
-// ========================
-function vibrate(pattern = [50]) {
-  if (navigator.vibrate) {
-    navigator.vibrate(pattern);
-  }
-}
-
-
-// ========================
-// Debounce Utility
+// Debounce Helper
 // ========================
 function debounce(fn, delay = 300) {
-  let timer;
+  let timer = null;
   return function (...args) {
     clearTimeout(timer);
     timer = setTimeout(() => fn.apply(this, args), delay);
@@ -304,12 +309,10 @@ async function shareReceiptImage(receiptElement, title) {
         showToast('Receipt shared!', 'success');
       } catch (e) {
         if (e.name !== 'AbortError') {
-          // Fallback to download
           downloadReceiptImage(receiptElement);
         }
       }
     } else {
-      // Fallback to download
       downloadReceiptImage(receiptElement);
     }
   }, 'image/png');
@@ -320,9 +323,8 @@ async function shareReceiptImage(receiptElement, title) {
 // ========================
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register('../sw.js')
       .then(reg => console.log('SW registered:', reg.scope))
       .catch(err => console.warn('SW registration failed:', err));
   });
 }
-

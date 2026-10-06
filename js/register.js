@@ -5,7 +5,6 @@ let currentReceiptNumber = '';
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize DB and settings
     await db.init();
-
     
     // Initialize UI
     initUI();
@@ -17,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateConnectionStatus(status);
         if (status === 'connected') {
             document.getElementById('pairing-screen').style.display = 'none';
-            document.getElementById('register-layout').style.display = 'grid'; // Assuming grid from styles.css
+            document.getElementById('register-layout').style.display = 'grid';
             playSuccessSound();
         } else if (status === 'disconnected' || status === 'error') {
             document.getElementById('pairing-screen').style.display = 'block';
@@ -26,11 +25,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     pm.onData(async (data) => {
-        if (data.type === 'scan') {
+        if (data.type === 'scan' || data.type === 'barcode') {
             await handleScan(data.barcode);
         } else if (data.type === 'product_added' && data.product) {
             await db.addProduct(data.product);
-            showToast(`New product added: ${data.product.name}`, 'success');
+            showToast(`New wholesale product added: ${data.product.name}`, 'success');
         }
     });
 
@@ -79,7 +78,7 @@ function initUI() {
         });
         settingsModal.style.display = 'none';
         renderReceipt();
-        showToast('Settings saved', 'success', 2000);
+        showToast('Store settings saved', 'success', 2000);
     });
 }
 
@@ -108,7 +107,7 @@ async function handleScan(barcode) {
     } else {
         playErrorBeep();
         pm.sendNotFound(barcode);
-        showToast('Product not found: ' + barcode, 'error', 3000);
+        showToast('Unknown barcode: ' + barcode, 'warning', 3000);
     }
 }
 
@@ -171,22 +170,29 @@ function updateCartUI() {
 
     cart.forEach(item => {
         totalItems += item.quantity;
-        const subtotal = item.quantity * item.product.price;
+        const priceInfo = getEffectiveUnitPrice(item.product, item.quantity);
+        const effectivePrice = priceInfo.unitPrice;
+        const subtotal = item.quantity * effectivePrice;
         totalValue += subtotal;
+
+        let tierBadgeHtml = '';
+        if (priceInfo.isWholesale) {
+            tierBadgeHtml = `<span class="badge badge-success" style="font-size: 0.65rem; margin-left: 0.4rem; padding: 2px 6px;">🏷️ Wholesale (${formatCurrency(effectivePrice)})</span>`;
+        }
 
         const itemEl = document.createElement('div');
         itemEl.className = 'cart-item card';
         itemEl.innerHTML = `
             <div class="cart-item-details" style="flex: 1;">
-                <div class="cart-item-name">${item.product.name}</div>
-                <div class="cart-item-price">${formatCurrency(item.product.price)}</div>
+                <div class="cart-item-name" style="font-weight: 600;">${item.product.name} ${tierBadgeHtml}</div>
+                <div class="cart-item-price" style="font-size: 0.85rem; color: var(--color-text-secondary);">${formatCurrency(effectivePrice)} ${priceInfo.isWholesale ? `<s style="font-size:0.75rem; color:var(--color-text-muted);">${formatCurrency(priceInfo.retailPrice)}</s>` : ''}</div>
             </div>
             <div class="qty-stepper" style="display: flex; align-items: center; gap: 0.5rem;">
                 <button class="btn btn-sm btn-secondary btn-minus" data-barcode="${item.product.barcode}">-</button>
-                <span class="qty-val">${item.quantity}</span>
+                <span class="qty-val" style="font-weight: 700; min-width: 24px; text-align: center;">${item.quantity}</span>
                 <button class="btn btn-sm btn-secondary btn-plus" data-barcode="${item.product.barcode}">+</button>
             </div>
-            <div class="cart-item-subtotal" style="width: 80px; text-align: right; font-weight: bold;">${formatCurrency(subtotal)}</div>
+            <div class="cart-item-subtotal" style="width: 90px; text-align: right; font-weight: bold; color: var(--color-primary);">${formatCurrency(subtotal)}</div>
             <button class="btn btn-icon btn-danger cart-item-remove" data-barcode="${item.product.barcode}">✕</button>
         `;
         listEl.appendChild(itemEl);
@@ -215,13 +221,14 @@ function renderReceipt() {
     
     let total = 0;
     const itemsHtml = cart.map(item => {
-        const subtotal = item.quantity * item.product.price;
+        const priceInfo = getEffectiveUnitPrice(item.product, item.quantity);
+        const subtotal = item.quantity * priceInfo.unitPrice;
         total += subtotal;
         return `
             <div class="receipt-item" style="margin-bottom: 0.5rem;">
-                <div class="receipt-item-name">${item.product.name}</div>
+                <div class="receipt-item-name" style="font-weight: 600;">${item.product.name} ${priceInfo.isWholesale ? '(Wholesale Tier)' : ''}</div>
                 <div class="receipt-item-row" style="display: flex; justify-content: space-between;">
-                    <span>${item.quantity} x ${formatCurrency(item.product.price)}</span>
+                    <span>${item.quantity} x ${formatCurrency(priceInfo.unitPrice)}</span>
                     <span>${formatCurrency(subtotal)}</span>
                 </div>
             </div>
@@ -230,7 +237,7 @@ function renderReceipt() {
 
     receiptEl.innerHTML = `
         <div class="receipt-header" style="text-align: center; margin-bottom: 1rem;">
-            <h3 style="margin: 0;">${settings.storeName || 'RodDarcy POS'}</h3>
+            <h3 style="margin: 0;">${settings.storeName || 'Wholesale Store'}</h3>
             <p style="margin: 0; font-size: 0.8rem;">${settings.storeAddress || ''}</p>
             ${settings.storePhone ? `<p style="margin: 0; font-size: 0.8rem;">${settings.storePhone}</p>` : ''}
             <div class="receipt-divider" style="border-bottom: 1px dashed #ccc; margin: 0.5rem 0;"></div>
@@ -248,7 +255,7 @@ function renderReceipt() {
         </div>
         <div class="receipt-divider" style="border-bottom: 1px dashed #ccc; margin: 0.5rem 0;"></div>
         <div class="receipt-footer" style="text-align: center; font-size: 0.8rem;">
-            <p>${settings.receiptFooter || 'Thank you for your purchase!'}</p>
+            <p>${settings.receiptFooter || 'Thank you for your business!'}</p>
         </div>
     `;
 }
@@ -258,12 +265,14 @@ async function completeSale() {
 
     let total = 0;
     const items = cart.map(i => {
-        const subtotal = i.quantity * i.product.price;
+        const priceInfo = getEffectiveUnitPrice(i.product, i.quantity);
+        const subtotal = i.quantity * priceInfo.unitPrice;
         total += subtotal;
         return {
             barcode: i.product.barcode,
             name: i.product.name,
-            price: i.product.price,
+            price: priceInfo.unitPrice,
+            isWholesale: priceInfo.isWholesale,
             quantity: i.quantity,
             subtotal: subtotal
         };
@@ -277,7 +286,6 @@ async function completeSale() {
 
     playSuccessSound();
     
-    // Show modal
     const modal = document.getElementById('complete-modal');
     modal.style.display = 'flex';
     
