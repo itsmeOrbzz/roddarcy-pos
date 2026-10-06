@@ -71,8 +71,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initQRScanner() {
         await stopScanner();
         
-        if (pairingPhase) pairingPhase.classList.remove('hidden');
-        if (scanningPhase) scanningPhase.classList.add('hidden');
+        if (pairingPhase) {
+            pairingPhase.classList.remove('hidden');
+            pairingPhase.style.display = 'block';
+        }
+        if (scanningPhase) {
+            scanningPhase.classList.add('hidden');
+            scanningPhase.style.display = 'none';
+        }
         updateStatusUI('disconnected', 'Disconnected');
 
         try {
@@ -135,7 +141,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         pm.onData(async (data) => {
             if (data.type === 'sync_products' && Array.isArray(data.products)) {
-                // Receive full master inventory from iPad register!
                 if (window.db) {
                     await db.importProducts(data.products);
                     showToast(`Synced ${data.products.length} master products from register`, "info", 2000);
@@ -152,7 +157,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 showToast(`Added: ${data.name || data.barcode}`, "success");
             } else if (data.type === 'NOT_FOUND') {
-                // Check if phone already has product in local DB before prompting!
                 const existing = window.db ? await db.getProduct(data.barcode) : null;
                 if (existing) {
                     if (pm && pm.isConnected) {
@@ -182,26 +186,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Phase 2: Barcode Scanning View
     async function switchToScanningPhase() {
-        if (pairingPhase) pairingPhase.classList.add('hidden');
-        if (scanningPhase) scanningPhase.classList.remove('hidden');
+        if (pairingPhase) {
+            pairingPhase.classList.add('hidden');
+            pairingPhase.style.display = 'none';
+        }
+        if (scanningPhase) {
+            scanningPhase.classList.remove('hidden');
+            scanningPhase.style.display = 'block';
+        }
         if (lastScannedStatus) {
             lastScannedStatus.textContent = "Ready to scan product barcodes...";
             lastScannedStatus.style.color = '#f8fafc';
         }
 
+        // Wait brief delay to allow previous QR camera stream to release completely
+        await new Promise(resolve => setTimeout(resolve, 400));
+
         try {
             html5QrcodeScanner = new Html5Qrcode("barcode-reader");
             const config = { 
                 fps: 10, 
-                qrbox: { width: 280, height: 140 },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39
-                ]
+                qrbox: { width: 280, height: 140 }
             };
             
             await html5QrcodeScanner.start(
@@ -212,6 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             );
         } catch (err) {
             console.warn("Barcode camera reader notice:", err);
+            showToast("Camera busy. Tap 'Enter Barcode Manually' below if camera doesn't start.", "warning");
         }
     }
 
